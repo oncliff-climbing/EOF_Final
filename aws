@@ -1,0 +1,114 @@
+a. cert-manager CRD 설치
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.crds.yaml
+
+
+cert-manager 설치
+Cert-manager는 쿠버네티스 클러스터 내에서 TLS 인증서를 자동으로 프로비저닝 및 관리하는 오픈소스이다.
+
+kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml
+
+
+AWS Load Balancer Controller 설치
+EKS에서 ALB를 Ingress로 사용하려면 AWS Load Balancer Controller를 설치해야 합니다.
+# AWS CLI 설치
+curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+sudo installer -pkg AWSCLIV2.pkg -target /
+
+# eksctl 설치
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+sudo mv /tmp/eksctl /usr/local/bin
+
+
+
+
+2. IAM OIDC 제공자 생성
+eksctl utils associate-iam-oidc-provider --cluster EOF-cluster --approve
+
+eksctl utils associate-iam-oidc-provider --region ap-northeast-1 --cluster EOF-cluster --approve
+
+2.1 필요한 IAM 정책 생성
+AWS Load Balancer Controller가 ALB를 관리할 수 있도록 필요한 IAM 정책을 생성합니다.
+
+curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy.json
+
+
+#기존 정책 확인
+aws iam list-policies --query 'Policies[?PolicyName==`AWSLoadBalancerControllerIAMPolicy`].{PolicyName:PolicyName,Arn:Arn}'
+
+
+
+2.2 IAM 서비스 계정 생성
+eksctl을 사용하여 IAM 서비스 계정을 생성합니다.
+eksctl create iamserviceaccount \
+  --cluster EOF-cluster \
+  --namespace kube-system \
+  --name aws-load-balancer-controller \
+  --attach-policy-arn arn:aws:iam::058264352854:policy/AWSLoadBalancerControllerIAMPolicy \
+  --approve
+
+#서비스 계정 생성 확인
+kubectl get serviceaccount aws-load-balancer-controller -n kube-system
+kubectl get sa -n kube-system
+
+#기존 서비스 계정 삭제
+kubectl delete serviceaccount aws-load-balancer-controller -n kube-system
+
+
+
+helm 설치
+sudo snap install helm --classic
+
+
+AWS Load Balancer Controller 최신 버전 설치
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update
+
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  --set clusterName=EOF-cluster \
+  --set serviceAccount.create=false \
+  --set region=ap-northeast-1 \
+  --set vpcId=vpc-0e6f225aef1a80d26 \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  -n kube-system
+
+#설치 확인
+kubectl get pods -n kube-system | grep aws-load-balancer-controller
+
+
+#기존 helm release 삭제
+helm uninstall aws-load-balancer-controller -n kube-system
+
+
+## 주의할 점 ##
+AWS LB Controller가 정상적으로 동작하기 위해선, 배포할 Subnets에 태그를 지정하거나, 아래에서 사용할 annotations에 서브넷을 명시해야한다.
+
+기본적으로 태그가 존재하면 Controller가 자동으로 사용할 서브넷을 선택하지만, 태그가 없다면 서브넷을 명시해야한다.
+
+태그가 있어도 원하는 서브넷에 ALB를 구성하기 위해서 지정해도 상관없다.
+
+해당 부분이 만족되지 않으면 AWS LB Controller는 사용할 VPC와 Subnets을 Discovery하지 못한다.
+
+ 
+
+만약 Terraform이나 웹 콘솔로 직접 VPC 및 Subnets 같은 네트워크 요소를 구성했다면, 위 요소를 구성해야한다.
+
+참고로 Private Subnet로 지정하면, 당연히 외부에서 접속 못한다. External-IP Pending 발생
+
+
+
+
+
+
+
+
+
+퍼블릭 서브넷 태그 추가
+aws ec2 create-tags --resources subnet-0bce737905548131d --tags Key=kubernetes.io/role/elb,Value=1
+aws ec2 create-tags --resources subnet-0f773da8d019f9a3c --tags Key=kubernetes.io/role/elb,Value=2
+
+프라이빗 서브넷 태그 추가
+aws ec2 create-tags --resources subnet-08247e1e936a801be --tags Key=kubernetes.io/role/internal-elb,Value=1
+
+aws ec2 create-tags --resources subnet-091b8080039160bfd --tags Key=kubernetes.io/role/internal-elb,Value=2
+

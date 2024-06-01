@@ -1,0 +1,4 @@
+# ingress 우선 배포 후 app-deploy.yaml 실행할 것.
+# 코드 상 health 체크를 정상 구현했다면, 상관 없지만 정상적으로 구현되지 않은 경우,
+# ingress에서 alb.ingress.kubernetes.io/healthcheck-path: /health  주석 해제로 배포한 뒤 
+# ALB에서 대상그룹이 자동으로 지정된 경우 다시 주석 처리 후 배포하면 health 체크를 구현하지 않아도 정상적으로 기능이 수행된다.
