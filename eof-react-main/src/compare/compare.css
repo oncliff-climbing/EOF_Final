@@ -1,0 +1,22 @@
+/* result.css */
+/*
+.result {
+    text-align: center;
+    margin-top: 120px;
+  }
+  
+.charts-container {
+  margin: 0 50px;
+}
+*/
+.result {
+    padding: 30px;
+  }
+  
+  .charts-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+  }
+  
+  

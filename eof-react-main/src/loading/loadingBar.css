@@ -1,0 +1,12 @@
+.loading-bar-container {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  .loading-bar {
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease-in-out;
+  }
+  

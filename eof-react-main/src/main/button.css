@@ -1,0 +1,160 @@
+@font-face {
+    font-family: 'GmarketSansMedium';
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* 전체 페이지 스타일 */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'GmarketSansMedium';
+}
+
+.List {
+    font-family: 'GmarketSansMedium', Arial, sans-serif;
+    text-align: center;
+    margin: 120px;
+}
+
+.list-page-title {
+    margin-bottom: 35px;
+    font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-case {
+    border-top: 1px solid #ddd; 
+    border-bottom: 1px solid #ddd; 
+    margin-bottom: 15px;
+    padding: 10px;
+    font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-info {
+    display: flex; /* span 요소들을 가로로 배치 */
+    justify-content: space-between; 
+    align-items: center; /* 세부 정보를 수직으로 가운데 정렬 */
+    font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-name {
+    color: #f0f0f0;
+    background-color: #282c34; /* 배경색 설정 */
+    padding: 10px; /* 내부 여백 설정 */
+    display: inline-block; /* 요소를 인라인 블록으로 표시하여 텍스트와 같이 배치되면서 네모 상자의 크기가 내용에 맞게 조절됩니다. */
+    border-radius: 40px;
+    font-size: large;
+    margin-right: 10px;
+    font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-details {
+    padding: 10px;
+    background-color: #f9f9f9;
+    justify-content: flex-start; /* 왼쪽 정렬 추가 */
+    font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px;
+    font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-actions button {
+    margin-left: 5px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-actions button:hover {
+    background-color: #f0f0f0;
+}
+
+.button-group {
+    display: flex;
+    justify-content: center; /* 가운데 정렬 */
+    gap: 180px; /* 버튼 사이의 간격 */
+    position: relative; /* 부모 요소의 위치 지정 */
+    z-index: 10; /* z-index를 높여 가려지지 않도록 */
+    padding-top: 260px;
+}
+
+.btn {
+    padding: 15px 25px; /* 패딩 조정 */
+    width: 200px;
+    height: 200px; /* 버튼 높이 설정 */
+    font-size: 25px;
+    cursor: pointer;
+    border: none; /* 테두리 제거 */
+    border-radius: 10%; /* 라운드 버튼 */
+    background: #4901ac; 
+    color: #ffffff; /* 텍스트 색상 */
+    transition: transform 0.2s, box-shadow 0.2s; /* 모던한 전환 효과 */
+    font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.btn:hover {
+    transform: scale(1.3); /* 호버 시 확대 효과 */
+    background: #0073ff;
+    color: #fff705;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* 호버 시 그림자 효과 */
+} 
+
+.btn:active {
+    transform: scale(0.95); /* 클릭 시 축소 효과 */
+}
+
+.btn:focus {
+    outline: none; /* 포커스 시 외곽선 제거 */
+    box-shadow: 0 0 0 3px rgba(61, 49, 111, 0.5); /* 포커스 시 그림자 효과 */
+}
+
+.tooltip1 {
+    visibility: hidden;
+    background-color: rgba(255, 255, 255, 0.162);
+    color: #000000ae;
+    font-size: 20px;
+    text-align: center;
+    border-radius: 5px;
+    padding: 5px 10px;
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: -130%; /* Position to the left of the button */
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  .tooltip2 {
+    visibility: hidden;
+    background-color: rgba(255, 255, 255, 0.162);
+    color: #000000ae;
+    font-size: 20px;
+    text-align: center;
+    border-radius: 5px;
+    padding: 5px 10px;
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    right: -120%; /* Position to the left of the button */
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  .btn:hover .tooltip1 {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .btn:hover .tooltip2 {
+    visibility: visible;
+    opacity: 1;
+  }
