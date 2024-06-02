@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import './spike.css'
+import './spikeResult.css'
 import LoadingBar from '../loading/loadingBar';
 
 // Spike 컴포넌트 정의
@@ -17,21 +17,14 @@ const Spike = () => {
   useEffect(() => {
     // 데이터 가져오기 함수
     const executeTest = async () => {
-      try {
-        // API 호출
-        const response = await fetch(`http://localhost:8000/testcase/${id}/execute/`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const result = await response.json();
-        const testId = result.test_id;
-        
+      try {       
         // spike-stats 호출
-        const spikeResponse = await fetch(`http://localhost:8000/testcase/${testId}/spike-stats/`);
+        const test_id = id;
+        const spikeResponse = await fetch(`http://localhost:8000/testcase/${test_id}/spike-stats/`);
+        const spikeResult = await spikeResponse.json();
         if (!spikeResponse.ok) {
           throw new Error(`HTTP error! status: ${spikeResponse.status}`);
         }
-        const spikeResult = await spikeResponse.json();
 
         setData(spikeResult); // 데이터 상태 업데이트
         setLoading(false); // 로딩 상태 업데이트
@@ -44,19 +37,6 @@ const Spike = () => {
 
     executeTest();
   }, [id]); // id가 변경될 때마다 useEffect가 실행되도록 함
-
-  // 초를 업데이트하는 함수
-  useEffect(() => {
-    if (!testCompleted) { // 테스트가 완료되지 않았을 때만 실행
-      const timer = setInterval(() => {
-        setElapsedTime(prevElapsedTime => prevElapsedTime + 1);
-      }, 1000); // 1초마다 갱신
-  
-      return () => {
-        clearInterval(timer); // 컴포넌트가 unmount될 때 타이머 클리어
-      };
-    }
-  }, [testCompleted]);
 
   // 로딩 중일 때 렌더링
   if (loading) {
@@ -96,7 +76,7 @@ return (
             경과 시간 
             <br></br>
             <h1>🕐</h1>
-            <h2>{elapsedTime}초</h2>
+            <h2>{data[0][4]}초</h2>
         </div>}
       </div>
     </div>

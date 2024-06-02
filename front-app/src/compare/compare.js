@@ -36,13 +36,9 @@ const Result = () => {
         const count = current_response.data[0][0]
         console.log(count)
         let pre_response_data = [];
-        if (count !== 1) {
-          console.log("**************************")
-          console.log(selectedResult)
-          const pre_response = await axios.get(`http://localhost:8000/testcase/${test_id}/stats/${selectedResult}`);
-          console.log("&&&&&&&&&&&&&&&&&&&&&&")
-          pre_response_data = pre_response.data;
-        }
+        console.log("selectedResult: ",selectedResult)
+        const pre_response = await axios.get(`http://localhost:8000/testcase/${test_id}/stats/${selectedResult}`);
+        pre_response_data = pre_response.data;
 
         const mergedData = [pre_response_data, current_response.data];
         setData(mergedData);

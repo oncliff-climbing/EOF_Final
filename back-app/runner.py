@@ -124,6 +124,7 @@ class LoadTester:
 
     # 최종 통계를 기록 (스파이크 테스트 전용)
     def record_final_stats_spike(self, test_id, load_duration):
+        conn = mysql.connector.connect(**db_config)
         average_response_time = self.calculate_average_response_time()
         failure_rate = self.calculate_failure_rate()
         num_users = len(self.response_times)
@@ -134,8 +135,11 @@ class LoadTester:
 
         # 동일한 test_id가 존재하면 삭제 및 새로운 값 삽입
         if exists:
+            conn = mysql.connector.connect(**db_config)
+            c = conn.cursor()
             c.execute('DELETE FROM spike WHERE test_id = %s', (test_id,))
-        
+        conn = mysql.connector.connect(**db_config)
+        c = conn.cursor()
         c.execute('''INSERT INTO spike (test_id, Failures, avg_response_time, num_user, load_duration)
                      VALUES (%s, %s, %s, %s, %s)''',
                   (test_id, failure_rate, average_response_time, num_users, str(load_duration)))
