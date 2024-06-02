@@ -1,0 +1,82 @@
+@font-face {
+  font-family: 'GmarketSansMedium';
+  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* 전체 페이지 스타일 */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'GmarketSansMedium';
+}
+
+.List {
+  font-family: 'GmarketSansMedium', Arial, sans-serif;
+  text-align: center;
+  margin: 120px;
+}
+
+.list-page-title {
+  margin-bottom: 35px;
+  font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-case {
+  border-top: 1px solid #ddd; 
+  border-bottom: 1px solid #ddd; 
+  margin-bottom: 15px;
+  padding: 10px;
+  font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-info {
+  /* display: flex; span 요소들을 가로로 배치 */
+  /* justify-content: space-between;  */
+  /* align-items: center; 세부 정보를 수직으로 가운데 정렬 */
+  display: grid;
+  grid-template-columns: 0.5fr 1fr 1fr;
+  grid-gap: 10px;
+  /* margin: 30px; */
+
+  font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-name {
+  color: #f0f0f0;
+  background-color: #0073ff; /* 배경색 설정 */
+  padding: 10px; /* 내부 여백 설정 */
+  display: inline-block; /* 요소를 인라인 블록으로 표시하여 텍스트와 같이 배치되면서 네모 상자의 크기가 내용에 맞게 조절됩니다. */
+  border-radius: 40px;
+  font-size: large;
+  margin-right: 10px;
+  font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-details {
+  padding: 10px;
+  background-color: #f9f9f9;
+  justify-content: flex-start; /* 왼쪽 정렬 추가 */
+  font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px;
+  font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-actions button {
+  margin-left: 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: 'GmarketSansMedium'; /* 폰트 적용 */
+}
+
+.test-actions button:hover {
+  background-color: #f0f0f0;
+}

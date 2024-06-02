@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1  # Ingress 리소스의 API 버전
+kind: Ingress  # 생성할 리소스 종류는 Ingress
+metadata:
+  name: ingress  # Ingress 리소스의 이름
+  namespace: eof  # Ingress 리소스가 속할 네임스페이스
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing  # ALB를 인터넷에 노출시키기 위한 설정
+    alb.ingress.kubernetes.io/target-type: ip  # 대상 유형을 IP로 설정 (IP 주소를 사용하여 트래픽을 분배
+    alb.ingress.kubernetes.io/load-balancer-name: app-loadbalancer  # 로드 밸런서 이름 설정
+    alb.ingress.kubernetes.io/subnets: subnet-0cea2476111e7a490, subnet-098e3ae4b33cce460  # 서브넷 설정
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}, {"HTTP": 8080}]'  # ALB가 수신할 포트 설정
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-1:058264352854:certificate/beb8d205-f19f-40e8-b424-c672c951e940  # SSL 인증서 ARN
+    alb.ingress.kubernetes.io/healthcheck-path: /health  # 헬스 체크 경로 설정
+spec:
+  ingressClassName: alb  # 사용할 Ingress 클래스 이름 (ALB 사용)
+  rules:
+    - host: www.cloudeof.com  # 이 호스트명으로 들어오는 트래픽에 대한 규칙 정의
+      http:
+        paths:
+          - path: /  # 루트 경로에 대한 트래픽 처리
+            pathType: Prefix  # 경로 타입 (Prefix 매칭)
+            backend:
+              service:
+                name: front-service  # 프론트 서비스 이름
+                port:
+                  number: 80  # 프론트 서비스가 수신할 포트 번호
+    - host: www.cloudeof.com  # 동일한 호스트명으로 백엔드 서비스도 설정
+      http:
+        paths:
+          - path: /  # 백엔드로 전달할 API 경로 설정
+            pathType: Prefix  # 경로 타입 (Prefix 매칭)
+            backend:
+              service:
+                name: back-service  # 백엔드 서비스 이름
+                port:
+                  number: 8080  # 백엔드 서비스가 수신할 포트 번호

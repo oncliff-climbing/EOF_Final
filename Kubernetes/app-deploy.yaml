@@ -1,0 +1,177 @@
+apiVersion: apps/v1  # API 버전 지정 (apps/v1)
+kind: Deployment  # 리소스 종류 지정 (Deployment)
+metadata:
+  name: front-app  # Deployment 이름 지정
+  namespace: eof  # 네임스페이스 지정
+spec:
+  replicas: 1  # 생성할 파드의 복제본 수 지정
+  selector:
+    matchLabels:
+      app: front  # 라벨 선택 (이 라벨을 가진 파드를 선택)
+  template:
+    metadata:
+      labels:
+        app: front  # 파드에 할당할 라벨 지정
+    spec:
+      containers:
+        - name: front  # 컨테이너 이름 지정
+          image: oncliff/eof-final:front-app_1.0.28  # 사용할 컨테이너 이미지 지정  # shvic/projectf:dockerfile
+          ports:
+            - containerPort: 3000  # 프론트엔드 컨테이너에서 수신할 포트 번호
+          resources:
+           limits:
+              cpu: "1.5"
+              memory: "1024Mi"
+           requests:
+              cpu: "0.5"
+              memory: "512Mi"
+          # env:
+          #   - name: BACK_APP_SERVICE_HOST
+          #     value: "back-service"  # back-app 서비스의 이름을 환경 변수로 전달
+          #   - name: BACK_APP_SERVICE_PORT
+          #     value: "8000"  # back-app 서비스의 포트를 환경 변수로 전달    
+          # livenessProbe:
+          #   httpGet:
+          #     path: http://www.cloudeof.com/health
+          #     port: 3000
+          #   initialDelaySeconds: 3
+          #   periodSeconds: 30
+          # readinessProbe:
+          #   httpGet:
+          #     path: http://www.cloudeof.com/health
+          #     port: 3000
+          #   initialDelaySeconds: 3
+          #   periodSeconds: 30
+
+---
+apiVersion: apps/v1  # API 버전 지정 (apps/v1)
+kind: Deployment  # 리소스 종류 지정 (Deployment)
+metadata:
+  name: back-app  # Deployment 이름 지정
+  namespace: eof  # 네임스페이스 지정
+spec:
+  replicas: 1  # 생성할 파드의 복제본 수 지정
+  selector:
+    matchLabels:
+      app: back  # 라벨 선택 (이 라벨을 가진 파드를 선택)
+  template:
+    metadata:
+      labels:
+        app: back  # 파드에 할당할 라벨 지정
+    spec:
+      containers:
+        - name: back  # 컨테이너 이름 지정
+          image: oncliff/eof-final:back-app_1.0.28 # 사용할 컨테이너 이미지 지정
+          ports:
+            - containerPort: 8000  # 백엔드 컨테이너에서 수신할 포트 번호
+          resources:
+            limits:
+              cpu: "1.5"
+              memory: "1024Mi"
+            requests:
+              cpu: "0.5"
+              memory: "512Mi"
+          # livenessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8000
+          #   initialDelaySeconds: 3
+          #   periodSeconds: 30
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8000
+          #   initialDelaySeconds: 3
+          #   periodSeconds: 30
+---
+
+apiVersion: v1  # API 버전 지정 (v1)
+kind: Service  # 리소스 종류 지정 (Service)
+metadata:
+  name: front-service  # Service 이름 지정
+  namespace: eof  # 네임스페이스 지정
+spec:
+  selector:
+    app: front  # 이 라벨을 가진 파드를 선택
+  ports:
+    - protocol: TCP  # 사용할 프로토콜 지정 (TCP)
+      port: 80  # 클러스터 외부에서 접근할 포트 (서비스가 노출할 포트)
+      targetPort: 3000  # 프론트엔드 컨테이너의 포트 (타겟 포트)
+
+---
+apiVersion: v1  # API 버전 지정 (v1)
+kind: Service  # 리소스 종류 지정 (Service)
+metadata:
+  name: back-service  # Service 이름 지정
+  namespace: eof  # 네임스페이스 지정
+spec:
+  selector:
+    app: back  # 이 라벨을 가진 파드를 선택
+  ports:
+    - protocol: TCP  # 사용할 프로토콜 지정 (TCP)
+      port: 8080  # 클러스터 외부에서 접근할 포트 (서비스가 노출할 포트)
+      targetPort: 8000  # 백엔드 컨테이너의 포트 (타겟 포트)
+
+---
+apiVersion: autoscaling/v2  # 사용할 API 버전을 지정합니다.
+kind: HorizontalPodAutoscaler  # 리소스 종류를 지정합니다. 여기서는 HorizontalPodAutoscaler입니다.
+metadata:
+  name: eof-front-app-hpa  # HPA의 이름을 지정합니다.
+  namespace: eof  # HPA가 속한 네임스페이스를 지정합니다.
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1  # 대상 리소스의 API 버전입니다.
+    kind: Deployment  # 대상 리소스의 종류입니다. 여기서는 Deployment입니다.
+    name: front-app  # 스케일링할 Deployment의 이름입니다.
+  minReplicas: 1  # 최소 레플리카 수를 1로 설정합니다. (최소 1개의 파드는 항상 실행됩니다.)
+  maxReplicas: 10  # 최대 레플리카 수를 30으로 설정합니다. (최대 30개의 파드가 실행될 수 있습니다.)
+  metrics:
+    - type: Resource  # 리소스 기반 메트릭을 사용합니다.
+      resource:
+        name: cpu  # CPU 사용량을 기준으로 스케일링합니다.
+        target:
+          type: Utilization  # CPU 사용률을 기준으로 스케일링합니다.
+          averageUtilization: 50  # CPU 사용률이 평균 50%가 되도록 레플리카 수를 조정합니다.
+  behavior:
+    scaleDown:  # 스케일링 다운 정책을 정의합니다.
+      policies:
+        - type: Pods  # 파드 수 기준으로 스케일링 다운합니다.
+          value: 4  # 한 번에 최대 4개의 파드를 줄일 수 있습니다.
+          periodSeconds: 60  # 이 정책을 평가하는 주기는 60초입니다.
+        - type: Percent  # 퍼센트 기준으로 스케일링 다운합니다.
+          value: 10  # 현재 파드 수의 10%를 한 번에 줄일 수 있습니다.
+          periodSeconds: 60  # 이 정책을 평가하는 주기는 60초입니다.
+      selectPolicy: Max  # scaleDown 정책 중 최대값을 선택하여 적용합니다.
+      stabilizationWindowSeconds: 300  # 스케일링 안정화 창을 300초로 설정하여, 300초 동안 관찰된 메트릭을 기반으로 스케일링 결정을 내립니다.
+
+---
+apiVersion: autoscaling/v2  # 사용할 API 버전을 지정합니다.
+kind: HorizontalPodAutoscaler  # 리소스 종류를 지정합니다. 여기서는 HorizontalPodAutoscaler입니다.
+metadata:
+  name: eof-back-app-hpa  # HPA의 이름을 지정합니다.
+  namespace: eof  # HPA가 속한 네임스페이스를 지정합니다.
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1  # 대상 리소스의 API 버전입니다.
+    kind: Deployment  # 대상 리소스의 종류입니다. 여기서는 Deployment입니다.
+    name: back-app  # 스케일링할 Deployment의 이름입니다.
+  minReplicas: 1  # 최소 레플리카 수를 1로 설정합니다. (최소 1개의 파드는 항상 실행됩니다.)
+  maxReplicas: 10  # 최대 레플리카 수를 30으로 설정합니다. (최대 30개의 파드가 실행될 수 있습니다.)
+  metrics:
+    - type: Resource  # 리소스 기반 메트릭을 사용합니다.
+      resource:
+        name: cpu  # CPU 사용량을 기준으로 스케일링합니다.
+        target:
+          type: Utilization  # CPU 사용률을 기준으로 스케일링합니다.
+          averageUtilization: 50  # CPU 사용률이 평균 50%가 되도록 레플리카 수를 조정합니다.
+  behavior:
+    scaleDown:  # 스케일링 다운 정책을 정의합니다.
+      policies:
+        - type: Pods  # 파드 수 기준으로 스케일링 다운합니다.
+          value: 4  # 한 번에 최대 4개의 파드를 줄일 수 있습니다.
+          periodSeconds: 60  # 이 정책을 평가하는 주기는 60초입니다.
+        - type: Percent  # 퍼센트 기준으로 스케일링 다운합니다.
+          value: 10  # 현재 파드 수의 10%를 한 번에 줄일 수 있습니다.
+          periodSeconds: 60  # 이 정책을 평가하는 주기는 60초입니다.
+      selectPolicy: Max  # scaleDown 정책 중 최대값을 선택하여 적용합니다.
+      stabilizationWindowSeconds: 300  # 스케일링 안정화 창을 300초로 설정하여, 300초 동안 관찰된 메트릭을 기반으로 스케일링 결정을 내립니다.

@@ -1,0 +1,112 @@
+pipeline {
+    agent any
+    environment {
+        SERVER_IP = '43.206.109.37'
+        SONAR_URL = 'http://43.206.109.37:9000'
+        DOCKER_IMAGE = 'oncliff/eof-final'
+        DOCKER_TAG = '1.0'
+        DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
+        KUBERNETES_CREDENTIALS_ID = 'kube-config'
+        KUBERNETES_NAMESPACE = 'eof'
+        K8S_DEPLOYMENT_FRONT = 'front-app'
+        K8S_DEPLOYMENT_BACK = 'back-app'
+        K8S_SERVERURL = 'https://420CB5DD46DDEE6DC09968E38A979B1A.gr7.ap-northeast-1.eks.amazonaws.com'
+        K8S_YAML = 'app-deploy.yaml'
+        AWS_CREDENTIALS_ID = 'AWS_IAM'
+        AWS_REGION = 'ap-northeast-1'
+        EKS_CLUSTER_NAME = 'EOF-cluster'
+        NEW_TAG = "${DOCKER_TAG}.${env.BUILD_NUMBER}" // 글로벌 환경 변수로 NEW_TAG 초기화
+    }
+    triggers {
+        pollSCM('* * * * *')
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/oncliff-climbing/final.git',
+                        credentialsId: 'github'
+                    ]]
+                ])
+            }
+        }
+        stage('Set Environment Variables') { // 새로운 단계: 환경 변수 설정
+            steps {
+                script {
+                    env.NEW_TAG = "${DOCKER_TAG}.${currentBuild.number}"
+                    echo "NEW_TAG set to: ${env.NEW_TAG}" // NEW_TAG 값 확인
+                }
+            }
+        }
+        stage('Docker Image Build and Push') {
+            when {
+                expression { return currentBuild.resultIsBetterOrEqualTo('SUCCESS') }
+            }
+            steps {
+                script {
+                    def images = ["front-app", "back-app"]
+                    images.each { img ->
+                        dir("${env.WORKSPACE}/${img}") {
+                            sh "docker build -t ${DOCKER_IMAGE}:${img}_${env.NEW_TAG} ."
+                            withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                                sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                                sh "docker push ${DOCKER_IMAGE}:${img}_${env.NEW_TAG}"
+                                sh "docker logout"
+                            }
+                        }
+                    }
+                }
+            }
+            post {
+                success {
+                    echo "Docker images successfully built and pushed with tag ${env.NEW_TAG}" // 성공 시 NEW_TAG 확인
+                    slackSend(channel: '#cicd', color: 'good', message: """*Docker Build and Push Success!* \n *Docker Image:* ${DOCKER_IMAGE}:${env.NEW_TAG}""")
+                }
+                failure {
+                    echo "Docker build and push failed with tag ${env.NEW_TAG}" // 실패 시 NEW_TAG 확인
+                    slackSend(channel: '#cicd', color: 'danger', message: """*Docker Build and Push Failure!* \n *Docker Image:* ${DOCKER_IMAGE}:${env.NEW_TAG}""")
+                }
+            }
+        }
+        stage('Deploy to Kubernetes') {
+            when {
+                expression { return currentBuild.resultIsBetterOrEqualTo('SUCCESS') }
+            }
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${env.AWS_CREDENTIALS_ID}"], 
+                                 file(credentialsId: "${env.KUBERNETES_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
+                    script {
+                        def kubeconfigPath = "${env.WORKSPACE}/.kube/config"
+                        sh """
+                            mkdir -p ${env.WORKSPACE}/.kube
+                            export KUBECONFIG=${kubeconfigPath}
+                            aws eks update-kubeconfig --region ${env.AWS_REGION} --name ${env.EKS_CLUSTER_NAME}
+                            sleep 15
+                            kubectl set image deployment/${env.K8S_DEPLOYMENT_FRONT} front=${env.DOCKER_IMAGE}:front-app_${env.NEW_TAG} -n ${env.KUBERNETES_NAMESPACE}
+                            kubectl set image deployment/${env.K8S_DEPLOYMENT_BACK} back=${env.DOCKER_IMAGE}:back-app_${env.NEW_TAG} -n ${env.KUBERNETES_NAMESPACE}
+                            kubectl get all -n ${env.KUBERNETES_NAMESPACE} -o wide
+                        """
+                    }
+                }
+            }
+            post {
+                success {
+                    echo "Kubernetes deployment updated with images tagged ${env.NEW_TAG}" // 성공 시 NEW_TAG 확인
+                    slackSend(channel: '#cicd', color: 'good', message: """*Kubernetes Deployment Update Success!* \n *Images:* ${DOCKER_IMAGE}:${env.NEW_TAG}""")
+                }
+                failure {
+                    echo "Kubernetes deployment update failed with images tagged ${env.NEW_TAG}" // 실패 시 NEW_TAG 확인
+                    slackSend(channel: '#cicd', color: 'danger', message: """*Kubernetes Deployment Update Failure!* \n *Images:* ${DOCKER_IMAGE}:${env.NEW_TAG}""")
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
