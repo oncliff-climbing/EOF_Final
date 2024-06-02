@@ -72,3 +72,4 @@ class RequestStats:
 # stats.log_request("GET", "test_request", 120, 500)
 # stats.log_failure("GET", "test_request")
 # print(stats.serialize_stats())
+

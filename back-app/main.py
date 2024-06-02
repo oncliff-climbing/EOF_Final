@@ -1,3 +1,4 @@
+import traceback
 from fastapi import FastAPI, HTTPException, WebSocket
 import mysql.connector
 from fastapi.responses import FileResponse
@@ -66,10 +67,8 @@ async def read_list():
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-    response.headers['Content-Type'] = 'application/json; charset=utf-8'
-    return response
 
-# 테스트 생성 o
+# 테스트 생성
 @app.post('/testcase')
 async def create_test(data: TestData):
     try:
@@ -85,26 +84,6 @@ async def create_test(data: TestData):
         return {"test_id": test_id, "test_name": data.test_name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-# 테스트 생성 o
-@app.post('/testcase')
-async def create_test(data: TestData):
-    try:
-        print(TestData)
-        cursor.execute(
-            """
-            INSERT INTO test (target_url, test_name, user_num, user_plus_num, interval_time, plus_count)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """,
-            (data.target_url, data.test_name, data.user_num, data.user_plus_num, data.interval_time, data.plus_count)
-        )
-        conn.commit()
-        test_id = cursor.lastrowid
-        return {"test_id": test_id, "test_name": data.test_name}
-    except Exception as e:
-        raceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-    response.headers['Content-Type'] = 'application/json; charset=utf-8'
-    return response
 
 # 테스트 삭제 o
 @app.delete("/testcase/{test_id}")
@@ -165,6 +144,7 @@ async def pre_stats(test_id: int):
     try:
         cursor.execute("SELECT * FROM spike WHERE test_id = %s", (test_id,))
         updated_stats = cursor.fetchall()
+        print(updated_stats)
         if updated_stats:
             return updated_stats
         else:
@@ -198,13 +178,14 @@ async def get_id_list(id: int):
         if idList:
             return idList
     except Exception as e:
-            traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 # 비교할 테스트  결과값 반환
 @app.get("/testcase/{test_id}/stats/{selectedResult}")
 async def stats(test_id: int, selectedResult: int):
     try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM incremental WHERE test_id = %s AND count = %s", (test_id, selectedResult,))
         test_cases = cursor.fetchall()
         print(test_cases)
@@ -212,3 +193,4 @@ async def stats(test_id: int, selectedResult: int):
     except Exception as e:
         # traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+

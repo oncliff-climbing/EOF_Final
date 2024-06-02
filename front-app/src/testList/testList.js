@@ -59,7 +59,7 @@ const List = () => {
     
     const test = tests.find(t => t.id === id);
     if (test.user_plus_num === 0 || test.interval_time === 0 || test.plus_count === 0) {
-      navigate(`/spike/${id}`);
+      navigate(`/spikeTest/${id}`);
     } else {
       navigate(`/execute/${id}`);
     }
@@ -83,7 +83,13 @@ const List = () => {
   };
 
   const handleExecuteResult = (id) => {
-    navigate(`/result/${id}`);
+    const test = tests.find(t => t.id === id);
+    console.log(test.user_plus_num, test.interval_time, test.plus_count)
+    if (test.user_plus_num === 0 || test.interval_time === 0 || test.plus_count === 0) {
+      navigate(`/spikeResult/${id}`);
+    } else {
+      navigate(`/result/${id}`);
+    }
   };
 
   const handleCompareResult = (id) => {
