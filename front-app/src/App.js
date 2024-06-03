@@ -10,6 +10,7 @@ import Loading from './loading/loading.js';
 import SpikeTest from './spikeTest/spikeTest.js';
 import SpikeResult from './spikeResult/spikeResult.js';
 import Compare from './compare/compare.js'
+import Health From './health/health.js';
 import './App.css';
 
 
