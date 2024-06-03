@@ -5,12 +5,12 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import subprocess
 import logging
 import asyncio
 
 app = FastAPI()
-
 
 # CORS 설정
 app.add_middleware(
@@ -57,8 +57,18 @@ async def run_load_testing_script(url, initial_user_count, additional_user_count
         await process.wait()
     except Exception as e:
         print(f"Error: {e}")
+        
+        
+#헬스 체크
+@app.get("/health")
+async def health_check():
+    return JSONResponse(status_code=200, content={"status": "ok"})
 
-# 테스트 목록 불러오기 o
+@app.get("/")
+async def read_root():
+    return {"message": "Hello World"}
+
+# 테스트 목록 불러오기
 @app.get('/testcase')
 async def read_list():
     try:
@@ -85,7 +95,7 @@ async def create_test(data: TestData):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# 테스트 삭제 o
+# 테스트 삭제
 @app.delete("/testcase/{test_id}")
 async def delete_test(test_id: int):
     try:
@@ -95,7 +105,7 @@ async def delete_test(test_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# 테스트 실행 o
+# 테스트 실행
 @app.get("/testcase/{test_id}/execute/")
 async def execute_test(test_id: int):
     try:
