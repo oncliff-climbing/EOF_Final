@@ -21,7 +21,7 @@ const AddTestCaseForm = () => {
   };
 
   const handleSubmit = () => {
-    fetch('http://localhost:8000/testcase/', {
+    fetch('http://www.cloudeof.com:8080/testcase/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
