@@ -11,7 +11,6 @@ import asyncio
 
 app = FastAPI()
 
-
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
@@ -28,9 +27,6 @@ db_config = {
     'host': 'database-eof.cnakai2m8xfm.ap-northeast-1.rds.amazonaws.com',
     'database': 'api'
 }
-
-conn = mysql.connector.connect(**db_config)
-cursor = conn.cursor()
 
 # 데이터를 전송하기 위한 모델 정의
 class TestData(BaseModel):
@@ -58,14 +54,19 @@ async def run_load_testing_script(url, initial_user_count, additional_user_count
     except Exception as e:
         print(f"Error: {e}")
 
-# 테스트 목록 불러오기 o
+# 데이터베이스 연결 함수
+def get_db_connection():
+    conn = mysql.connector.connect(**db_config)
+    return conn, conn.cursor()
+
+# 테스트 목록 불러오기
 @app.get('/testcase')
 async def read_list():
     try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
+        conn, cursor = get_db_connection()
         cursor.execute("SELECT * FROM test")
         result = cursor.fetchall()
+        conn.close()
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
@@ -74,6 +75,7 @@ async def read_list():
 @app.post('/testcase')
 async def create_test(data: TestData):
     try:
+        conn, cursor = get_db_connection()
         cursor.execute(
             """
             INSERT INTO test (target_url, test_name, user_num, user_plus_num, interval_time, plus_count)
@@ -84,27 +86,31 @@ async def create_test(data: TestData):
         )
         conn.commit()
         test_id = cursor.lastrowid
+        conn.close()
         return {"test_id": test_id, "test_name": data.test_name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# 테스트 삭제 o
+# 테스트 삭제
 @app.delete("/testcase/{test_id}")
 async def delete_test(test_id: int):
     try:
+        conn, cursor = get_db_connection()
         cursor.execute("DELETE FROM test WHERE test_id = %s", (test_id,))
         conn.commit()
+        conn.close()
         return {"message": "Test deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# 테스트 실행 o
+# 테스트 실행
 @app.get("/testcase/{test_id}/execute/")
 async def execute_test(test_id: int):
     try:
-        cursor = conn.cursor()
+        conn, cursor = get_db_connection()
         cursor.execute("SELECT * FROM test WHERE test_id = %s", (test_id,))
         test_data = cursor.fetchone()
+        conn.close()
         if test_data:
             test_id, target_url, test_name, user_num, user_plus_num, interval_time, plus_count = test_data
             await run_load_testing_script(target_url, user_num, user_plus_num, interval_time, plus_count, test_id)
@@ -126,13 +132,12 @@ async def execute_test(test_id: int):
 @app.get("/testcase/{test_id}/stats/")
 async def stats(test_id: int):
     try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
+        conn, cursor = get_db_connection()
         cursor.execute("SELECT MAX(count) FROM incremental WHERE test_id = %s", (test_id,))
         count = cursor.fetchone()[0]
-        print("count: ", count)
         cursor.execute("SELECT * FROM incremental WHERE test_id = %s and count = %s", (test_id, count))
         updated_stats = cursor.fetchall()
+        conn.close()
         if updated_stats:
             return updated_stats
         else:
@@ -144,12 +149,10 @@ async def stats(test_id: int):
 @app.get("/testcase/{test_id}/spike-stats/")
 async def pre_stats(test_id: int):
     try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
+        conn, cursor = get_db_connection()
         cursor.execute("SELECT * FROM spike WHERE test_id = %s", (test_id,))
         updated_stats = cursor.fetchall()
-        print("spike-stats호출됨")
-        print(updated_stats)
+        conn.close()
         if updated_stats:
             return updated_stats
         else:
@@ -160,31 +163,27 @@ async def pre_stats(test_id: int):
 @app.get("/testcase/{id}/results")
 async def get_id_list(id: int):
     try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
+        conn, cursor = get_db_connection()
         cursor.execute("SELECT count FROM incremental WHERE test_id = %s", (id,))
         idList = cursor.fetchall()
+        conn.close()
         idList = set(idList)
-        print(idList)
         idList = [t[0] for t in idList]
         idList.sort()
-        print(idList)
         if idList:
             return idList
     except Exception as e:
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# 비교할 테스트  결과값 반환
+# 비교할 테스트 결과값 반환
 @app.get("/testcase/{test_id}/stats/{selectedResult}")
 async def stats(test_id: int, selectedResult: int):
     try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
+        conn, cursor = get_db_connection()
         cursor.execute("SELECT * FROM incremental WHERE test_id = %s AND count = %s", (test_id, selectedResult,))
         test_cases = cursor.fetchall()
-        print(test_cases)
+        conn.close()
         return test_cases
     except Exception as e:
-        # traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
