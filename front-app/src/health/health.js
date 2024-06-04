@@ -36,7 +36,7 @@ const Health = () => {
   useEffect(() => {
     const fetchHealthStatus = async () => {
       try {
-        const response = await axios.get('http://www.cloudeof.com:80/health');
+        const response = await axios.get('https://www.cloudeof.com:8080/health');
         console.log('Health check response:', response); // 응답 로그 추가
         if (response.status === 200 && response.data.status === "OK") {
           setStatus('Server is healthy');
