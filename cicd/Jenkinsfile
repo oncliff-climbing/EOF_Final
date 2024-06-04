@@ -27,7 +27,7 @@ pipeline {
                     $class: 'GitSCM',
                     branches: [[name: '*/main']],
                     userRemoteConfigs: [[
-                        url: 'https://github.com/oncliff-climbing/final.git',
+                        url: 'https://github.com/oncliff-climbing/EOF_Final.git',
                         credentialsId: 'github'
                     ]]
                 ])
@@ -80,15 +80,26 @@ pipeline {
                                  file(credentialsId: "${env.KUBERNETES_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
                     script {
                         def kubeconfigPath = "${env.WORKSPACE}/.kube/config"
-                        sh """
-                            mkdir -p ${env.WORKSPACE}/.kube
-                            export KUBECONFIG=${kubeconfigPath}
-                            aws eks update-kubeconfig --region ${env.AWS_REGION} --name ${env.EKS_CLUSTER_NAME}
-                            sleep 15
-                            kubectl set image deployment/${env.K8S_DEPLOYMENT_FRONT} front=${env.DOCKER_IMAGE}:front-app_${env.NEW_TAG} -n ${env.KUBERNETES_NAMESPACE}
-                            kubectl set image deployment/${env.K8S_DEPLOYMENT_BACK} back=${env.DOCKER_IMAGE}:back-app_${env.NEW_TAG} -n ${env.KUBERNETES_NAMESPACE}
-                            kubectl get all -n ${env.KUBERNETES_NAMESPACE} -o wide
-                        """
+                        try {
+                            sh """
+                                mkdir -p ${env.WORKSPACE}/.kube
+                                export KUBECONFIG=${kubeconfigPath}
+                                aws eks update-kubeconfig --region ${env.AWS_REGION} --name ${env.EKS_CLUSTER_NAME}
+                                sleep 5
+                                kubectl set image deployment/${env.K8S_DEPLOYMENT_FRONT} front=${env.DOCKER_IMAGE}:front-app_${env.NEW_TAG} -n ${env.KUBERNETES_NAMESPACE}
+                                kubectl set image deployment/${env.K8S_DEPLOYMENT_BACK} back=${env.DOCKER_IMAGE}:back-app_${env.NEW_TAG} -n ${env.KUBERNETES_NAMESPACE}
+                                kubectl rollout restart deployment back-app -n ${env.KUBERNETES_NAMESPACE}
+                                kubectl rollout restart deployment front-app -n ${env.KUBERNETES_NAMESPACE}
+                                kubectl delete replicaset --all -n ${env.KUBERNETES_NAMESPACE}
+                                kubectl rollout status deployment/${env.K8S_DEPLOYMENT_FRONT} -n ${env.KUBERNETES_NAMESPACE}
+                                kubectl rollout status deployment/${env.K8S_DEPLOYMENT_BACK} -n ${env.KUBERNETES_NAMESPACE}
+                                
+                            """
+                        } catch (Exception e) {
+                            echo "Deployment failed: ${e.getMessage()}"
+                            currentBuild.result = 'FAILURE'
+                            throw e
+                        }    
                     }
                 }
             }
