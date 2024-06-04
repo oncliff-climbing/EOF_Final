@@ -20,7 +20,7 @@ const Spike = () => {
       try {       
         // spike-stats 호출
         const test_id = id;
-        const spikeResponse = await fetch(`https://www.cloudeof.com:8080/testcase/${test_id}/spike-stats/`);
+        const spikeResponse = await fetch(`http://www.cloudeof.com:8080/testcase/${test_id}/spike-stats/`);
         const spikeResult = await spikeResponse.json();
         if (!spikeResponse.ok) {
           throw new Error(`HTTP error! status: ${spikeResponse.status}`);
