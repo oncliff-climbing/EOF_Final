@@ -13,7 +13,7 @@ const List = () => {
   useEffect(() => {
     const fetchTests = async () => {
       try {
-        const response = await axios.get('https://www.cloudeof.com:8080/testcase');        
+        const response = await axios.get('http://www.cloudeof.com:8080/testcase');        
         const data = response.data.map(([id, target_url, test_name, user_num, user_plus_num, interval_time, plus_count]) => ({
           id,
           target_url,
@@ -68,7 +68,7 @@ const List = () => {
   const handleResult = async (id, event) => {
     event.stopPropagation();
     try {
-      const response = await axios.get(`https://www.cloudeof.com:8080/testcase/${id}/results`);
+      const response = await axios.get(`http://www.cloudeof.com:8080/testcase/${id}/results`);
 
       setResultData(prevData => ({ ...prevData, [id]: response.data }));
       setExpandedIndex(tests.findIndex(test => test.id === id));
