@@ -36,11 +36,9 @@ const AddTestCaseForm = () => {
     })
     .then(data => {
       console.log('Success:', data);
-      // 여기에 성공한 후의 동작을 추가하세요.
     })
     .catch(error => {
       console.error('Error:', error);
-      // 여기에 오류 처리를 추가하세요.
     });
   };
 
