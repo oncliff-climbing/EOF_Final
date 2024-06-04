@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent an
     environment {
         SERVER_IP = '43.206.109.37'
         SONAR_URL = 'http://43.206.109.37:9000'
