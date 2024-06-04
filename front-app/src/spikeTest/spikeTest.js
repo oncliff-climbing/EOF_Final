@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import './spikeTest.css'
+import Loading from './Loading.gif';
+import Loading2 from './Loading2.gif';
 import LoadingBar from '../loading/loadingBar';
 
 // Spike 컴포넌트 정의
@@ -45,25 +47,12 @@ const Spike = () => {
     executeTest();
   }, [id]); // id가 변경될 때마다 useEffect가 실행되도록 함
 
-  // 초를 업데이트하는 함수
-  useEffect(() => {
-    if (!testCompleted) { // 테스트가 완료되지 않았을 때만 실행
-      const timer = setInterval(() => {
-        setElapsedTime(prevElapsedTime => prevElapsedTime + 1);
-      }, 1000); // 1초마다 갱신
-  
-      return () => {
-        clearInterval(timer); // 컴포넌트가 unmount될 때 타이머 클리어
-      };
-    }
-  }, [testCompleted]);
-
   // 로딩 중일 때 렌더링
   if (loading) {
     return (
         <div className='spike-load'>
             <h2 className='spike-title'>Spike 테스트 중 ...</h2>
-            <p className='timer'>경과 시간: {elapsedTime}초</p>
+            <div className='timer'><img src={Loading} alt="로딩중" width="10%" /></div>
             {/* <LoadingBar height="20px" width={`${progress}%`} color="#007bff" /> */}
         </div>
     );
@@ -96,7 +85,7 @@ return (
             경과 시간 
             <br></br>
             <h1>🕐</h1>
-            <h2>{elapsedTime}초</h2>
+            <h2>{data[0][4]}초</h2>
         </div>}
       </div>
     </div>
@@ -105,3 +94,4 @@ return (
 };
 
 export default Spike;
+

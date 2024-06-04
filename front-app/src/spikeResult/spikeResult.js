@@ -38,14 +38,11 @@ const Spike = () => {
     executeTest();
   }, [id]); // id가 변경될 때마다 useEffect가 실행되도록 함
 
+
   // 로딩 중일 때 렌더링
   if (loading) {
     return (
-        <div className='spike-load'>
-            <h2 className='spike-title'>Spike 테스트 중 ...</h2>
-            <p className='timer'>경과 시간: {elapsedTime}초</p>
-            {/* <LoadingBar height="20px" width={`${progress}%`} color="#007bff" /> */}
-        </div>
+        <div></div>
     );
   };
 
