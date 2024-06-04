@@ -16,7 +16,7 @@ const Execute = () => {
     if (!isExecuted.current) { // isExecuted가 false일 때만 실행
       isExecuted.current = true; // 실행 후 true로 변경
       try {
-        const response = await axios.get(`https://www.cloudeof.com:8080/testcase/${id}/execute/`);
+        const response = await axios.get(`http://www.cloudeof.com:8080/testcase/${id}/execute/`);
         setTestData(response.data);
       } catch (error) {
         console.error('Error executing test:', error);
