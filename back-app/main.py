@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, MetaData
+from sqlalchemy import create_engine, Column, Integer, String, Float, Time, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import subprocess
@@ -36,14 +36,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 # 모델 정의
 class Test(Base):
     __tablename__ = "test"
@@ -55,6 +47,27 @@ class Test(Base):
     user_plus_num = Column(Integer)
     interval_time = Column(Integer)
     plus_count = Column(Integer)
+
+class Spike(Base):
+    __tablename__ = "spike"
+
+    test_id = Column(Integer, primary_key=True, index=True)
+    Failures = Column(Integer)
+    avg_response_time = Column(Float)
+    num_user = Column(Integer)
+    load_duration = Column(Time)
+
+class Incremental(Base):
+    __tablename__ = "incremental"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    count = Column(Integer)
+    test_id = Column(Integer)
+    RPS = Column(Float)
+    Failures_per_second = Column(Float)
+    avg_response_time = Column(Float)
+    number_of_users = Column(Integer)
+    recorded_time = Column(Time)
 
 Base.metadata.create_all(bind=engine)
 
@@ -92,6 +105,14 @@ async def health_check():
 @app.get("/")
 async def read_root():
     return {"message": "Hello World"}
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # 테스트 목록 불러오기
 @app.get('/testcase')
