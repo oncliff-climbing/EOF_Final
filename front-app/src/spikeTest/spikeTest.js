@@ -19,7 +19,7 @@ const Spike = () => {
     const executeTest = async () => {
       try {
         // API 호출
-        const response = await fetch(`http://www.cloudeof.com:8080/testcase/${id}/execute/`);
+        const response = await fetch(`https://www.cloudeof.com:8080/testcase/${id}/execute/`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -27,7 +27,7 @@ const Spike = () => {
         const testId = result.test_id;
         
         // spike-stats 호출
-        const spikeResponse = await fetch(`http://www.cloudeof.com:8080/testcase/${testId}/spike-stats/`);
+        const spikeResponse = await fetch(`https://www.cloudeof.com:8080/testcase/${testId}/spike-stats/`);
         if (!spikeResponse.ok) {
           throw new Error(`HTTP error! status: ${spikeResponse.status}`);
         }
