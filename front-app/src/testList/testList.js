@@ -45,7 +45,7 @@ const List = () => {
     if (confirmed) {
       try {
         const idToDelete = testToDelete.id;
-        await axios.delete(`http://www.cloudeof.com:8080/testcase/${idToDelete}`);
+        await axios.delete(`https://www.cloudeof.com:8080/testcase/${idToDelete}`);
         const newTests = tests.filter((_, i) => i !== index);
         setTests(newTests);
       } catch (error) {
@@ -68,7 +68,7 @@ const List = () => {
   const handleResult = async (id, event) => {
     event.stopPropagation();
     try {
-      const response = await axios.get(`http://www.cloudeof.com:8080/testcase/${id}/results`);
+      const response = await axios.get(`https://www.cloudeof.com:8080/testcase/${id}/results`);
 
       setResultData(prevData => ({ ...prevData, [id]: response.data }));
       setExpandedIndex(tests.findIndex(test => test.id === id));
