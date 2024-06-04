@@ -1,75 +1,36 @@
 import traceback
-from fastapi import FastAPI, HTTPException, WebSocket, Depends
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, WebSocket
+import mysql.connector
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, Float, Time, MetaData
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
 import subprocess
 import logging
 import asyncio
-import os
 
 app = FastAPI()
 
-# 로깅 설정
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # 허용할 도메인 리스트. 모든 도메인을 허용하려면 ["*"] 사용.
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # 허용할 HTTP 메서드 리스트. 모든 메서드를 허용하려면 ["*"] 사용.
+    allow_headers=["*"],  # 허용할 HTTP 헤더 리스트. 모든 헤더를 허용하려면 ["*"] 사용.
 )
 
-# 환경 변수에서 DB 설정 가져오기
-DATABASE_URL = os.getenv('DATABASE_URL', 'mysql+pymysql://root:test1234@database-eof.cnakai2m8xfm.ap-northeast-1.rds.amazonaws.com')
+# DB
+db_config = {
+    'user': 'root',
+    'password': 'test1234',
+    'host': 'database-eof.cnakai2m8xfm.ap-northeast-1.rds.amazonaws.com',
+    'database': 'api'
+}
 
-engine = create_engine(
-    DATABASE_URL, pool_recycle=500, pool_size=5, max_overflow=20, echo=False, echo_pool=True
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base = declarative_base()
-
-# 모델 정의
-class Test(Base):
-    __tablename__ = "test"
-
-    test_id = Column(Integer, primary_key=True, index=True)
-    target_url = Column(String, index=True)
-    test_name = Column(String, index=True)
-    user_num = Column(Integer)
-    user_plus_num = Column(Integer)
-    interval_time = Column(Integer)
-    plus_count = Column(Integer)
-
-class Spike(Base):
-    __tablename__ = "spike"
-
-    test_id = Column(Integer, primary_key=True, index=True)
-    Failures = Column(Integer)
-    avg_response_time = Column(Float)
-    num_user = Column(Integer)
-    load_duration = Column(Time)
-
-class Incremental(Base):
-    __tablename__ = "incremental"
-
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    count = Column(Integer)
-    test_id = Column(Integer)
-    RPS = Column(Float)
-    Failures_per_second = Column(Float)
-    avg_response_time = Column(Float)
-    number_of_users = Column(Integer)
-    recorded_time = Column(Time)
-
-Base.metadata.create_all(bind=engine)
+conn = mysql.connector.connect(**db_config)
+cursor = conn.cursor()
 
 # 데이터를 전송하기 위한 모델 정의
 class TestData(BaseModel):
@@ -95,140 +56,135 @@ async def run_load_testing_script(url, initial_user_count, additional_user_count
         process = await asyncio.create_subprocess_exec(*command)
         await process.wait()
     except Exception as e:
-        logger.error(f"Error: {e}")
+        print(f"Error: {e}")
 
-# 헬스 체크
-@app.get("/health")
-async def health_check():
-    return JSONResponse(status_code=200, content={"status": "ok"})
-
-@app.get("/")
-async def read_root():
-    return {"message": "Hello World"}
-
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# 테스트 목록 불러오기
+# 테스트 목록 불러오기 o
 @app.get('/testcase')
-async def read_list(db: Session = Depends(get_db)):
+async def read_list():
     try:
-        tests = db.query(Test).all()
-        return tests
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM test")
+        result = cursor.fetchall()
+        return result
     except Exception as e:
-        logger.error(f"Error fetching test cases: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 # 테스트 생성
 @app.post('/testcase')
-async def create_test(data: TestData, db: Session = Depends(get_db)):
+async def create_test(data: TestData):
     try:
-        test = Test(
-            target_url=data.target_url,
-            test_name=data.test_name,
-            user_num=data.user_num,
-            user_plus_num=data.user_plus_num,
-            interval_time=data.interval_time,
-            plus_count=data.plus_count
+        cursor.execute(
+            """
+            INSERT INTO test (target_url, test_name, user_num, user_plus_num, interval_time, plus_count)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (data.target_url, data.test_name, data.user_num, 
+             data.user_plus_num, data.interval_time, data.plus_count)
         )
-        db.add(test)
-        db.commit()
-        db.refresh(test)
-        return {"test_id": test.test_id, "test_name": test.test_name}
+        conn.commit()
+        test_id = cursor.lastrowid
+        return {"test_id": test_id, "test_name": data.test_name}
     except Exception as e:
-        logger.error(f"Error creating test: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# 테스트 삭제
+# 테스트 삭제 o
 @app.delete("/testcase/{test_id}")
-async def delete_test(test_id: int, db: Session = Depends(get_db)):
+async def delete_test(test_id: int):
     try:
-        test = db.query(Test).filter(Test.test_id == test_id).first()
-        if test is None:
-            raise HTTPException(status_code=404, detail="Test not found")
-        db.delete(test)
-        db.commit()
+        cursor.execute("DELETE FROM test WHERE test_id = %s", (test_id,))
+        conn.commit()
         return {"message": "Test deleted successfully"}
     except Exception as e:
-        logger.error(f"Error deleting test: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# 테스트 실행
+# 테스트 실행 o
 @app.get("/testcase/{test_id}/execute/")
-async def execute_test(test_id: int, db: Session = Depends(get_db)):
+async def execute_test(test_id: int):
     try:
-        test = db.query(Test).filter(Test.test_id == test_id).first()
-        if test:
-            await run_load_testing_script(test.target_url, test.user_num, test.user_plus_num, test.interval_time, test.plus_count, test.test_id)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM test WHERE test_id = %s", (test_id,))
+        test_data = cursor.fetchone()
+        if test_data:
+            test_id, target_url, test_name, user_num, user_plus_num, interval_time, plus_count = test_data
+            await run_load_testing_script(target_url, user_num, user_plus_num, interval_time, plus_count, test_id)
             return {
-                "test_id": test.test_id,
-                "target_url": test.target_url,
-                "test_name": test.test_name,
-                "user_num": test.user_num,
-                "user_plus_num": test.user_plus_num,
-                "interval_time": test.interval_time,
-                "plus_count": test.plus_count,
+                "test_id": test_id,
+                "target_url": target_url,
+                "test_name": test_name,
+                "user_num": user_num,
+                "user_plus_num": user_plus_num,
+                "interval_time": interval_time,
+                "plus_count": plus_count,
             }
         else:
             raise HTTPException(status_code=404, detail="Testcase not found")
     except Exception as e:
-        logger.error(f"Error executing test: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
     
-# 테스트 결과값 반환 (예제 테이블과 컬럼 설정 필요)
+# 테스트 결과값 반환
 @app.get("/testcase/{test_id}/stats/")
-async def stats(test_id: int, db: Session = Depends(get_db)):
+async def stats(test_id: int):
     try:
-        # 여기에 결과값을 가져오는 쿼리를 추가
-        # 예제에서는 임의의 쿼리 사용
-        results = db.execute("SELECT MAX(count) FROM incremental WHERE test_id = :test_id", {'test_id': test_id}).fetchone()
-        count = results[0] if results else None
-        if count:
-            updated_stats = db.execute("SELECT * FROM incremental WHERE test_id = :test_id AND count = :count", {'test_id': test_id, 'count': count}).fetchall()
-            return updated_stats
-        else:
-            raise HTTPException(status_code=404, detail="No updated stats found for this test_id")
-    except Exception as e:
-        logger.error(f"Error fetching stats: {e}")
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-
-# 테스트 결과값 반환 (예제 테이블과 컬럼 설정 필요)
-@app.get("/testcase/{test_id}/spike-stats/")
-async def pre_stats(test_id: int, db: Session = Depends(get_db)):
-    try:
-        # 여기에 결과값을 가져오는 쿼리를 추가
-        # 예제에서는 임의의 쿼리 사용
-        updated_stats = db.execute("SELECT * FROM spike WHERE test_id = :test_id", {'test_id': test_id}).fetchall()
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT MAX(count) FROM incremental WHERE test_id = %s", (test_id,))
+        count = cursor.fetchone()[0]
+        print("count: ", count)
+        cursor.execute("SELECT * FROM incremental WHERE test_id = %s and count = %s", (test_id, count))
+        updated_stats = cursor.fetchall()
         if updated_stats:
             return updated_stats
         else:
             raise HTTPException(status_code=404, detail="No updated stats found for this test_id")
     except Exception as e:
-        logger.error(f"Error fetching spike stats: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-@app.get("/testcase/{id}/results")
-async def get_id_list(id: int, db: Session = Depends(get_db)):
+# 테스트 결과값 반환
+@app.get("/testcase/{test_id}/spike-stats/")
+async def pre_stats(test_id: int):
     try:
-        results = db.execute("SELECT count FROM incremental WHERE test_id = :test_id", {'test_id': id}).fetchall()
-        id_list = {result[0] for result in results}
-        id_list = sorted(id_list)
-        return id_list if id_list else []
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM spike WHERE test_id = %s", (test_id,))
+        updated_stats = cursor.fetchall()
+        print("spike-stats호출됨")
+        print(updated_stats)
+        if updated_stats:
+            return updated_stats
+        else:
+            raise HTTPException(status_code=404, detail="No updated stats found for this test_id")
     except Exception as e:
-        logger.error(f"Error fetching results list: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-
-# 비교할 테스트 결과값 반환 (예제 테이블과 컬럼 설정 필요)
-@app.get("/testcase/{test_id}/stats/{selectedResult}")
-async def stats(test_id: int, selectedResult: int, db: Session = Depends(get_db)):
+    
+@app.get("/testcase/{id}/results")
+async def get_id_list(id: int):
     try:
-        test_cases = db.execute("SELECT * FROM incremental WHERE test_id = :test_id AND count = :selectedResult", {'test_id': test_id, 'selectedResult': selectedResult}).fetchall()
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT count FROM incremental WHERE test_id = %s", (id,))
+        idList = cursor.fetchall()
+        idList = set(idList)
+        print(idList)
+        idList = [t[0] for t in idList]
+        idList.sort()
+        print(idList)
+        if idList:
+            return idList
+    except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+# 비교할 테스트  결과값 반환
+@app.get("/testcase/{test_id}/stats/{selectedResult}")
+async def stats(test_id: int, selectedResult: int):
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM incremental WHERE test_id = %s AND count = %s", (test_id, selectedResult,))
+        test_cases = cursor.fetchall()
+        print(test_cases)
         return test_cases
     except Exception as e:
-        logger.error(f"Error fetching stats for selected result: {e}")
+        # traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
