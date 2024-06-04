@@ -3,5 +3,3 @@ uvicorn
 mysql-connector-python
 requests
 gevent
-sqlalchemy
-pymysql
