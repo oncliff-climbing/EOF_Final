@@ -7,6 +7,7 @@ from stats_management import RequestStats
 from datetime import datetime, timedelta
 
 # MySQL 데이터베이스 연결
+#"""
 db_config = {
     'user': 'root',      
     'password': 'test1234',   
@@ -115,14 +116,17 @@ class LoadTester:
         print(self.request_count, elapsed_time)
         # 현재 시점을 마지막 기록 시점으로 업데이트
         self.last_recorded_time = current_time
+
         c.execute('''INSERT INTO incremental (count, test_id, RPS, Failures_per_second, avg_response_time, number_of_users, recorded_time)
                      VALUES (%s, %s, %s, %s, %s, %s, %s)''',
                   (count, test_id, rps, failures_per_second, average_response_time, len(self.response_times), current_time))
         conn.commit()
 
+
     # 최종 통계를 기록 (스파이크 테스트 전용)
     def record_final_stats_spike(self, test_id, load_duration):
         conn = mysql.connector.connect(**db_config)
+        c = conn.cursor()
         average_response_time = self.calculate_average_response_time()
         failure_rate = self.calculate_failure_rate()
         num_users = len(self.response_times)
@@ -130,18 +134,31 @@ class LoadTester:
         # 동일한 test_id가 존재하는지 확인
         c.execute('SELECT * FROM spike WHERE test_id = %s', (test_id,))
         exists = c.fetchone()
-
-        # 동일한 test_id가 존재하면 삭제 및 새로운 값 삽입
+        c.execute('SELECT load_duration FROM spike WHERE test_id = %s', (test_id,))
+        beforeLoadDuration = c.fetchone()
+        print("exists는 존재하며 이값임!!!!!!!!!!!!!", exists)
+        print("기존 load_duration값: ", beforeLoadDuration)
+        
+        # 동일한 test_id가 존재하면 업데이트
         if exists:
+            print("exists존재함!!!!!!!!!!!!!!!!")
             conn = mysql.connector.connect(**db_config)
             c = conn.cursor()
-            c.execute('DELETE FROM spike WHERE test_id = %s', (test_id,))
-        conn = mysql.connector.connect(**db_config)
-        c = conn.cursor()
-        c.execute('''INSERT INTO spike (test_id, Failures, avg_response_time, num_user, load_duration)
-                     VALUES (%s, %s, %s, %s, %s)''',
-                  (test_id, failure_rate, average_response_time, num_users, str(load_duration)))
-        conn.commit()
+            c.execute('UPDATE spike SET load_duration = %s WHERE test_id = %s', (str(load_duration), test_id,))
+            print("새로운 load_duration 반영완료: ", str(load_duration))
+            conn.commit()
+            c.execute('SELECT load_duration FROM spike WHERE test_id = %s', (test_id,))
+            newLoadDuration = c.fetchone()
+            print(newLoadDuration)
+        # 동일한 test_id가 없으면 새로 추가
+        else:
+            print("존재 안해!!!!!!!!!!!!!!")
+            conn = mysql.connector.connect(**db_config)
+            c = conn.cursor()
+            c.execute('''INSERT INTO spike (test_id, Failures, avg_response_time, num_user, load_duration)
+                         VALUES (%s, %s, %s, %s, %s)''',
+                      (test_id, failure_rate, average_response_time, num_users, str(load_duration)))
+            conn.commit()
 
 # 테스트 환경 설정 클래스 정의
 class TestEnvironment:
