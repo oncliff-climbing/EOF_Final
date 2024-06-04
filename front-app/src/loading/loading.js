@@ -1,11 +1,10 @@
-// Result.js
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Chart from 'chart.js/auto';
 import './loading.css';
 
-const Loading = () => {
+const Loading = ({ onDataLoadComplete }) => { // 콜백 함수를 props로 받음
   const { id } = useParams();
   const [data, setData] = useState([]);
   const rpsChartRef = useRef(null);
@@ -22,17 +21,27 @@ const Loading = () => {
         console.error('데이터를 불러오는 중 오류가 발생했습니다:', error);
       }
     };
-  
-    const intervalId = setInterval(fetchData, 1000); // 1초마다 fetchData 호출
-  
+
+    const executeTest = async () => {
+      try {
+        const response = await axios.get(`http://www.cloudeof.com:8080/testcase/${id}/execute/`);
+        console.log('데이터가 성공적으로 저장되었습니다.');
+        setData(response.data);
+        fetchData();
+      } catch (error) {
+        console.error('Error executing test:', error);
+      }
+    };
+
+    executeTest();
+
     return () => {
-      clearInterval(intervalId); // 언마운트될 때 interval 해제
-      // 컴포넌트가 언마운트될 때 차트를 제거합니다.
       if (rpsChartRef.current) rpsChartRef.current.destroy();
       if (responseTimeChartRef.current) responseTimeChartRef.current.destroy();
       if (numberOfUsersChartRef.current) numberOfUsersChartRef.current.destroy();
     };
-  }, [id]);
+  }, [id, onDataLoadComplete]);
+
   
 
   // 차트 그리는 함수
