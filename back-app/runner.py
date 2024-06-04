@@ -7,7 +7,6 @@ from stats_management import RequestStats
 from datetime import datetime, timedelta
 
 # MySQL 데이터베이스 연결
-#"""
 db_config = {
     'user': 'root',      
     'password': 'test1234',   
@@ -120,7 +119,6 @@ class LoadTester:
                      VALUES (%s, %s, %s, %s, %s, %s, %s)''',
                   (count, test_id, rps, failures_per_second, average_response_time, len(self.response_times), current_time))
         conn.commit()
-
 
     # 최종 통계를 기록 (스파이크 테스트 전용)
     def record_final_stats_spike(self, test_id, load_duration):
