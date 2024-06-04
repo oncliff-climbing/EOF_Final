@@ -30,14 +30,14 @@ const Result = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const current_response = await axios.get(`http://www.cloudeof.com:8080/testcase/${test_id}/stats/`);
+        const current_response = await axios.get(`https://www.cloudeof.com:8080/testcase/${test_id}/stats/`);
         console.log(current_response.data)
         console.log("####################")
         const count = current_response.data[0][0]
         console.log(count)
         let pre_response_data = [];
         console.log("selectedResult: ",selectedResult)
-        const pre_response = await axios.get(`http://www.cloudeof.com:8080/testcase/${test_id}/stats/${selectedResult}`);
+        const pre_response = await axios.get(`https://www.cloudeof.com:8080/testcase/${test_id}/stats/${selectedResult}`);
         pre_response_data = pre_response.data;
 
         const mergedData = [pre_response_data, current_response.data];
