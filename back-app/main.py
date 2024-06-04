@@ -27,7 +27,7 @@ app.add_middleware(
 )
 
 # 환경 변수에서 DB 설정 가져오기
-DATABASE_URL = os.getenv('DATABASE_URL', 'mysql+pymysql://root:test1234@database-eof.cnakai2m8xfm.ap-northeast-1.rds.amazonaws.com/api')
+DATABASE_URL = os.getenv('DATABASE_URL', 'mysql+pymysql://root:test1234@database-eof.cnakai2m8xfm.ap-northeast-1.rds.amazonaws.com')
 
 engine = create_engine(
     DATABASE_URL, pool_recycle=500, pool_size=5, max_overflow=20, echo=False, echo_pool=True
