@@ -1,54 +1,20 @@
-// execute.js
-
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import axios from 'axios';
-import './execute.css';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Loading from '../loading/loading.js';
 
 const Execute = () => {
-  const { id } = useParams();
   const [testData, setTestData] = useState(null);
-  const isExecuted = useRef(false); // useRef로 실행 여부를 추적
+  const [isLoadingComplete, setIsLoadingComplete] = useState(false); // 작업 완료 여부를 상태로 관리
 
-  const executeTest = async () => {
-    if (!isExecuted.current) { // isExecuted가 false일 때만 실행
-      isExecuted.current = true; // 실행 후 true로 변경
-      try {
-        const response = await axios.get(`http://www.cloudeof.com:8080/testcase/${id}/execute/`);
-        setTestData(response.data);
-      } catch (error) {
-        console.error('Error executing test:', error);
-      }
-    }
+  // Loading 컴포넌트에서 작업이 완료되었을 때 호출할 함수
+  const handleLoadingComplete = (testData) => {
+    setTestData(testData); // 특정 값 설정
+    setIsLoadingComplete(true); // 작업 완료 상태로 변경
   };
-
-  // const deleteTest = async () => {
-  //   try {
-  //     await axios.delete(`http://localhost:8000/testcase/${id}/stats/`);
-  //     console.log('Test deleted successfully');
-  //   } catch (error) {
-  //     console.error('Error deleting test:', error);
-  //   }
-  // };
-
-  useEffect(() => {
-    console.log(1);
-    // deleteTest(); // 삭제 요청 실행
-    
-
-    // 실행 요청을 삭제 요청 후에 보내도록 setTimeout 사용
-    setTimeout(() => {
-      executeTest();
-    }, 1000); // 1초 후 실행
-
-  }, []); // 빈 배열로 한 번만 실행되도록 설정
 
   return (
     <div className="Execute">
-      
-      {testData ? (
+      {isLoadingComplete ? ( // 작업 완료 여부에 따라 UI를 변경
         <div>
           <h2>테스트가 완료되었습니다!</h2>
           <div className="test-details">
@@ -63,12 +29,11 @@ const Execute = () => {
         </div>
       ) : (
         <div>
-          <Loading />
+          <Loading onComplete={handleLoadingComplete} /> {/* Loading 컴포넌트에 콜백 함수 전달 */}
         </div>
       )}
-       
     </div>
   );
 }
 
-export default Execute;
+export default Execute; 
