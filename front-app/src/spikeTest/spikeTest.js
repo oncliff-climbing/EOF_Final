@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import './spikeTest.css'
-import LoadingBar from '../loading/loadingBar';
+import Loading from '../spikeTest/Loading.gif';
 
 // Spike 컴포넌트 정의
 const Spike = () => {
@@ -27,7 +27,7 @@ const Spike = () => {
         const testId = result.test_id;
         
         // spike-stats 호출
-        const spikeResponse = await fetch(`https://www.cloudeof.com:8080/testcase/${testId}/spike-stats/`);
+        const spikeResponse = await fetch(`http://www.cloudeof.com:8080/testcase/${testId}/spike-stats/`);
         if (!spikeResponse.ok) {
           throw new Error(`HTTP error! status: ${spikeResponse.status}`);
         }
@@ -63,7 +63,7 @@ const Spike = () => {
     return (
         <div className='spike-load'>
             <h2 className='spike-title'>Spike 테스트 중 ...</h2>
-            <p className='timer'>경과 시간: {elapsedTime}초</p>
+            <div className='timer'><img src={Loading} alt="로딩중" width="10%" /></div>
             {/* <LoadingBar height="20px" width={`${progress}%`} color="#007bff" /> */}
         </div>
     );
