@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Chart from 'chart.js/auto';
 import './result.css';
-import BeforeResult from './before';
+// import BeforeResult from './before';
 
 const Result = () => {
   const { id } = useParams();
