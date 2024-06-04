@@ -16,7 +16,7 @@ const Result = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`https://www.cloudeof.com:8080/testcase/${id}/stats/`);
+        const response = await axios.get(`http://www.cloudeof.com:8080/testcase/${id}/stats/`);
         
         setData(response.data);
         drawCharts(response.data);
