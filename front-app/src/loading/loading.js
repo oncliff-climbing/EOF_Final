@@ -144,6 +144,7 @@ const Loading = () => {
   return (
     <div>
     <div className="loading">
+      <div className="chart-column">
       <h2>Incremental 테스트 진행 중 ...</h2>
 
       {/* 차트 컨테이너 */}
@@ -155,6 +156,7 @@ const Loading = () => {
         {/* Number of Users 차트 */}
         <canvas id="numberOfUsersChart" width="800" height="150"></canvas>
       </div>
+          </div>
       
     </div>
     </div>
