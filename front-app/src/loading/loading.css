@@ -7,3 +7,15 @@
 .charts-container {
   margin: 0 50px;
 }
+
+.chart-column canvas {
+  width: 100% !important;
+  height: 300px !important;
+  margin-bottom: 20px;
+}
+
+.chart-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
